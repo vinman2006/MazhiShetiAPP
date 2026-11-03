@@ -89,104 +89,363 @@ class _PostLoginAppScreenState extends State<PostLoginAppScreen> {
     });
   }
 
-  void _showDetailSheet(String title, String subtitle, String detail) {
+  void _handleSearchQuery(String query, BuildContext ctx) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return;
+    Navigator.pop(ctx);
+    if (q.contains('weather') || q.contains('rain') || q.contains('forecast') || q.contains('temp')) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const WeatherDetailScreen()));
+    } else if (q.contains('market') || q.contains('price') || q.contains('mandi') || q.contains('rate') || q.contains('bhav')) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const MarketPricesScreen()));
+    } else if (q.contains('map') || q.contains('field') || q.contains('land') || q.contains('acre') || q.contains('survey')) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => InteractiveFarmMapScreen(profileState: widget.profileState)));
+    } else if (q.contains('scan') || q.contains('pest') || q.contains('leaf') || q.contains('disease') || q.contains('camera')) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const CropScannerScreen()));
+    } else if (q.contains('community') || q.contains('farmer') || q.contains('chat') || q.contains('group')) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => CommunityScreen(profileState: widget.profileState)));
+    } else if (q.contains('learn') || q.contains('video') || q.contains('guide')) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const LearnScreen()));
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const CropAdviceScreen()));
+    }
+  }
+
+  void _showNotificationsSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          18,
-          20,
-          MediaQuery.of(ctx).viewInsets.bottom + 24,
-        ),
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.notifications_active_rounded, color: ExactColors.primaryFabGreen, size: 24),
+                const SizedBox(width: 10),
+                const Text(
+                  'Notifications & Farm Alerts',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: ExactColors.headerDarkGreen,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildNotificationCard(
+              title: 'Weather & Spray Advisory',
+              subtitle: '26°C–32°C with 58% humidity. Ideal foliar spraying window between 07:00 AM – 10:30 AM.',
+              badge: 'Agronomy',
+              badgeColor: Colors.green,
+              actionLabel: 'View Weather',
+              onAction: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const WeatherDetailScreen()));
+              },
+            ),
+            const SizedBox(height: 10),
+            _buildNotificationCard(
+              title: 'Mandi Price Gain (+2.4%)',
+              subtitle: 'Soybean touched ₹4,892/quintal in Nagpur APMC. Upward demand from local oil mills.',
+              badge: 'Market Alert',
+              badgeColor: Colors.orange,
+              actionLabel: 'Check Mandi',
+              onAction: () {
+                Navigator.pop(ctx);
+                setState(() => _activeNavIndex = 2);
+              },
+            ),
+            const SizedBox(height: 10),
+            _buildNotificationCard(
+              title: 'Aerial Drone Survey Ready',
+              subtitle: 'Flight log processed: Canopy NDVI 0.78 indicates healthy vegetative crop growth.',
+              badge: 'Drone Telemetry',
+              badgeColor: Colors.blue,
+              actionLabel: 'View Telemetry',
+              onAction: () {
+                Navigator.pop(ctx);
+                _showTrackProgressSheet();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationCard({
+    required String title,
+    required String subtitle,
+    required String badge,
+    required Color badgeColor,
+    required String actionLabel,
+    required VoidCallback onAction,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: ExactColors.featureCardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFD6F0C1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(color: badgeColor, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                ),
+                onPressed: onAction,
+                child: Text(actionLabel, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: ExactColors.primaryFabGreen)),
+              ),
+            ],
+          ),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: ExactColors.headerDarkGreen)),
+          const SizedBox(height: 2),
+          Text(subtitle, style: const TextStyle(fontSize: 11.5, color: ExactColors.mutedText, height: 1.3)),
+        ],
+      ),
+    );
+  }
+
+  void _showTrackProgressSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (_, scrollController) => ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           children: [
             Center(
               child: Container(
                 width: 44,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
+            const SizedBox(height: 14),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
+                const Icon(Icons.flight_takeoff_rounded, color: ExactColors.primaryFabGreen, size: 26),
+                const SizedBox(width: 10),
+                const Expanded(
                   child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
+                    'Drone Progress & Aerial Monitoring',
+                    style: TextStyle(
+                      fontSize: 16.5,
                       fontWeight: FontWeight.w800,
                       color: ExactColors.headerDarkGreen,
                     ),
                   ),
                 ),
-                IconButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  icon: const Icon(Icons.close_rounded, size: 22),
+                IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                'assets/images/screen_8_bg.jpg',
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Image.asset(
+                  'assets/images/s2_tool_track_hd.png',
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: ExactColors.featureCardBg,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFD6F0C1)),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Canopy NDVI', style: TextStyle(fontSize: 11, color: ExactColors.mutedText)),
+                        SizedBox(height: 4),
+                        Text('0.78', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: ExactColors.primaryFabGreen)),
+                        Text('Dense & Healthy', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: ExactColors.featureCardBg,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFD6F0C1)),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Canopy Closure', style: TextStyle(fontSize: 11, color: ExactColors.mutedText)),
+                        SizedBox(height: 4),
+                        Text('84%', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: ExactColors.headerDarkGreen)),
+                        Text('Optimal Coverage', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green)),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: ExactColors.primaryFabGreen,
-              ),
-            ),
             const SizedBox(height: 14),
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: ExactColors.featureCardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFD6F0C1)),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE5EDE2)),
               ),
-              child: Text(
-                detail,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  height: 1.5,
-                  color: ExactColors.bodyText,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Latest Aerial Flight Log', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  _buildProgressRow('Flight Survey Time', 'Today, 07:15 AM'),
+                  _buildProgressRow('Sensor Type', 'Multispectral 12MP (NIR + RGB)'),
+                  _buildProgressRow('Field 1 (Cotton - 2.4 Ac)', 'NDVI 0.81 • Peak Vigor'),
+                  _buildProgressRow('Field 2 (Soybean - 1.8 Ac)', 'NDVI 0.74 • Uniform Growth'),
+                ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
+              height: 46,
+              child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: ExactColors.primaryFabGreen,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text(
-                  'Dismiss',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                ),
+                icon: const Icon(Icons.schedule_rounded),
+                label: const Text('Schedule Next Drone Flight', style: TextStyle(fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Drone flight scheduled for tomorrow morning at 07:00 AM.'),
+                      backgroundColor: ExactColors.primaryFabGreen,
+                    ),
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildProgressRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, color: ExactColors.mutedText)),
+          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ExactColors.headerDarkGreen)),
+        ],
+      ),
+    );
+  }
+
+  String _generateAgronomyResponse(String query) {
+    final q = query.toLowerCase();
+    final p = widget.profileState;
+    final farmerName = p.fullName.isNotEmpty ? p.fullName : 'Farmer';
+    final location = p.selectedLocation.isNotEmpty ? p.selectedLocation : 'Nagpur, Maharashtra';
+
+    if (q.contains('cotton') || q.contains('kapas')) {
+      return 'Cotton Advisory for $farmerName:\n'
+          '• Pest Watch: Monitor for Pink Bollworm using pheromone traps (5/acre). If rosette flowers exceed 5%, spray Profenofos 50% EC @ 2 mL/L.\n'
+          '• Current APMC Price: ₹6,150 / quintal (↑ 3.2%) in $location.\n'
+          '• Irrigation: Maintain light moisture during boll formation; avoid waterlogging.';
+    }
+    if (q.contains('wheat') || q.contains('gehu')) {
+      return 'Wheat Advisory for $farmerName:\n'
+          '• Sowing Window: Optimal window is November 1–15 with varieties Lok-1 or GW-322.\n'
+          '• Fertilizer: 50 kg DAP + 30 kg MOP basal per acre. Top-dress Urea in two splits at 21 & 45 DAS.\n'
+          '• Market Rate: ₹2,425 / quintal in local APMC.';
+    }
+    if (q.contains('soybean') || q.contains('soyabean')) {
+      return 'Soybean Advisory for $farmerName:\n'
+          '• Disease Alert: Spray Mancozeb 75% WP @ 2.5 g/L to manage Cercospora leaf spot.\n'
+          '• Harvest Moisture: Harvest when pod moisture drops to 13–15% to avoid pod shattering.\n'
+          '• Market Rate: Trading strong at ₹4,892 / quintal (↑ 2.4%).';
+    }
+    if (q.contains('price') || q.contains('mandi') || q.contains('bhav') || q.contains('rate') || q.contains('market')) {
+      return 'Live Mandi Price Rates for $location:\n'
+          '• Soybean: ₹4,892 / qtl (↑ 2.4%)\n'
+          '• Cotton: ₹6,150 / qtl (↑ 3.2%)\n'
+          '• Wheat: ₹2,425 / qtl (↓ 1.1%)\n'
+          '• Maize: ₹1,980 / qtl (↑ 0.8%)\n'
+          'Peak buyer volume is active between 10:00 AM and 01:00 PM.';
+    }
+    if (q.contains('weather') || q.contains('rain') || q.contains('havaman') || q.contains('forecast') || q.contains('temp')) {
+      return 'Weather Forecast for $location:\n'
+          '• Day Temp: 26°C – 32°C (Partly Cloudy)\n'
+          '• Humidity: 58% • Soil Moisture: 68%\n'
+          '• Rain Risk: Low (<10%) over next 48 hours\n'
+          '• Best Spray Window: 07:00 AM – 10:30 AM before wind speed picks up.';
+    }
+    if (q.contains('fertilizer') || q.contains('khad') || q.contains('urea') || q.contains('dap') || q.contains('npk')) {
+      return 'Nutrient Management (${p.selectedFarmSize ?? "5.0"} Acres - ${p.soilType.label}):\n'
+          '• Basal Dose: 50 kg DAP + 30 kg MOP per acre at sowing.\n'
+          '• Top Dressing: 45 kg Urea split across vegetative stages.\n'
+          '• Micronutrient: Apply 10 kg Zinc Sulphate (21%) for root strength and chlorophyll synthesis.';
+    }
+    return 'AI Agronomist Diagnosis for $farmerName ($location):\n'
+        'Based on your registered crops (${p.selectedCrops.join(', ')}) and soil moisture (68%), field conditions are favorable. '
+        'For specific recommendations, you can ask about pest symptoms, fertilizer doses, weather spraying windows, or live mandi rates.';
   }
 
   void _showSearchSheet() {
@@ -232,14 +491,25 @@ class _PostLoginAppScreenState extends State<PostLoginAppScreen> {
             TextField(
               controller: searchCtrl,
               autofocus: true,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (query) => _handleSearchQuery(query, ctx),
               decoration: InputDecoration(
                 hintText: 'e.g. Soybean leaf spot, Wheat Mandi price, Drip timing...',
                 prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.mic, color: ExactColors.primaryFabGreen),
-                  onPressed: () {
-                    searchCtrl.text = 'Best fertilizer dose for Soybean';
-                  },
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.mic, color: ExactColors.primaryFabGreen),
+                      onPressed: () {
+                        searchCtrl.text = 'Best fertilizer dose for Soybean';
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_forward_rounded, color: ExactColors.primaryFabGreen),
+                      onPressed: () => _handleSearchQuery(searchCtrl.text, ctx),
+                    ),
+                  ],
                 ),
                 filled: true,
                 fillColor: ExactColors.featureCardBg,
@@ -421,6 +691,13 @@ class _PostLoginAppScreenState extends State<PostLoginAppScreen> {
             TextField(
               controller: _questionController,
               autofocus: true,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) {
+                final q = _questionController.text.trim();
+                if (q.isEmpty) return;
+                Navigator.pop(ctx);
+                _showAiQuestionSheet(q, _generateAgronomyResponse(q));
+              },
               decoration: InputDecoration(
                 hintText: 'Type your farming question here...',
                 suffixIcon: IconButton(
@@ -429,13 +706,7 @@ class _PostLoginAppScreenState extends State<PostLoginAppScreen> {
                     final q = _questionController.text.trim();
                     if (q.isEmpty) return;
                     Navigator.pop(ctx);
-                    final farmerName = widget.profileState.fullName.isNotEmpty
-                        ? widget.profileState.fullName
-                        : 'Farmer';
-                    _showAiQuestionSheet(
-                      q,
-                      'AI Agronomist Diagnosis for $farmerName:\nBased on current weather in Nagpur (26°C–32°C, 58% humidity) and soil moisture (68%), apply recommended dosage with calibrated spray nozzle in early morning.',
-                    );
+                    _showAiQuestionSheet(q, _generateAgronomyResponse(q));
                   },
                 ),
                 filled: true,
@@ -489,13 +760,15 @@ class _PostLoginAppScreenState extends State<PostLoginAppScreen> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => _buildAvatarFallbackLarge(p),
                         )
-                      : Image.asset(
-                          'assets/images/avatar_vineet.jpg',
-                          width: 56,
-                          height: 56,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildAvatarFallbackLarge(p),
-                        ),
+                      : (p.fullName.toLowerCase().contains('vineet')
+                          ? Image.asset(
+                              'assets/images/avatar_vineet.jpg',
+                              width: 56,
+                              height: 56,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _buildAvatarFallbackLarge(p),
+                            )
+                          : _buildAvatarFallbackLarge(p)),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -540,6 +813,24 @@ class _PostLoginAppScreenState extends State<PostLoginAppScreen> {
             _buildProfileRow('Land Survey 7/12:', p.landSurveyNo),
             _buildProfileRow('Language:', p.selectedLanguage),
             const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ExactColors.headerDarkGreen,
+                  side: const BorderSide(color: ExactColors.headerDarkGreen),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  widget.onBackToOnboarding();
+                },
+                icon: const Icon(Icons.replay_rounded),
+                label: const Text('Replay Onboarding Screens (1-6)', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -817,13 +1108,15 @@ class _PostLoginAppScreenState extends State<PostLoginAppScreen> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => _buildAvatarFallback(),
                         )
-                      : Image.asset(
-                          'assets/images/avatar_vineet.jpg',
-                          width: 34,
-                          height: 34,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildAvatarFallback(),
-                        ),
+                      : (widget.profileState.fullName.toLowerCase().contains('vineet')
+                          ? Image.asset(
+                              'assets/images/avatar_vineet.jpg',
+                              width: 34,
+                              height: 34,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _buildAvatarFallback(),
+                            )
+                          : _buildAvatarFallback()),
                 ),
               ),
               const SizedBox(width: 6),
@@ -834,11 +1127,7 @@ class _PostLoginAppScreenState extends State<PostLoginAppScreen> {
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     icon: const Icon(Icons.notifications_none_rounded, color: ExactColors.headerDarkGreen, size: 24),
-                    onPressed: () => _showDetailSheet(
-                      'Notifications',
-                      'Latest Farm & Weather Alerts',
-                      '• Weather Alert: Optimal spraying conditions today (26°C-32°C).\n• Mandi Update: Soybean gained +2.4% in Nagpur APMC.',
-                    ),
+                    onPressed: _showNotificationsSheet,
                   ),
                   Positioned(
                     right: 0,
@@ -984,7 +1273,7 @@ class _PostLoginAppScreenState extends State<PostLoginAppScreen> {
                 iconColor: const Color(0xFF8E44AD),
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const CommunityScreen()),
+                  MaterialPageRoute(builder: (_) => CommunityScreen(profileState: widget.profileState)),
                 ),
               ),
             ],
@@ -1133,11 +1422,7 @@ class _PostLoginAppScreenState extends State<PostLoginAppScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.notifications_none_rounded, color: ExactColors.headerDarkGreen, size: 24),
-                onPressed: () => _showDetailSheet(
-                  'Notifications',
-                  'Nagpur Weather & Pest Alerts',
-                  '• Spray Alert: Optimal window before 11:30 AM.\n• Mandi Rate: Cotton up +3.2%.',
-                ),
+                onPressed: _showNotificationsSheet,
               ),
             ],
           ),
@@ -1537,10 +1822,7 @@ class _PostLoginAppScreenState extends State<PostLoginAppScreen> {
               Expanded(
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CropScannerScreen()),
-                  ),
+                  onTap: _showTrackProgressSheet,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Image.asset(

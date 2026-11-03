@@ -11,6 +11,7 @@ class _CropAdviceScreenState extends State<CropAdviceScreen> with SingleTickerPr
   late TabController _tabController;
   final List<String> _crops = ['Soybean', 'Cotton', 'Wheat', 'Maize', 'Rice'];
   int _selectedCropIndex = 0;
+  double _farmAcres = 2.5;
 
   @override
   void initState() {
@@ -102,21 +103,12 @@ class _CropAdviceScreenState extends State<CropAdviceScreen> with SingleTickerPr
       padding: const EdgeInsets.all(16),
       children: [
         _buildInfoCard(
-          title: 'Current Growth Stage',
-          subtitle: 'Vegetative to Pod Setting (45 Days After Sowing)',
-          badge: 'Optimal Growth',
+          title: '$crop Sowing & Growth Stage',
+          subtitle: 'Vegetative Phase (Day 38 of 105)',
+          badge: 'Ideal Vigor',
           badgeColor: Colors.green,
-          content: 'Weather in Nagpur (26°C - 32°C) is ideal for foliar nutrient uptake. Ensure soil moisture is maintained between 60%-70%. Avoid flood irrigation.',
-          icon: Icons.timeline_rounded,
-        ),
-        const SizedBox(height: 14),
-        _buildInfoCard(
-          title: 'Foliar Nutrient Recommendation',
-          subtitle: 'Immediate Application Window',
-          badge: 'Recommended',
-          badgeColor: Colors.blue,
-          content: 'Foliar spray of 19:19:19 NPK @ 5 g/L + Chelated Micronutrients @ 1 g/L in early morning (7:00 AM – 10:30 AM) to boost branching.',
-          icon: Icons.water_drop_outlined,
+          content: 'Atmospheric conditions and soil moisture are ideal for vegetative branching. Secondary node formation detected across 88% of monitored canopy.',
+          icon: Icons.eco_rounded,
         ),
         const SizedBox(height: 14),
         _buildInfoCard(
@@ -132,9 +124,99 @@ class _CropAdviceScreenState extends State<CropAdviceScreen> with SingleTickerPr
   }
 
   Widget _buildFertilizerTab(String crop) {
+    const primaryGreen = Color(0xFF044D3D);
+    final ureaKg = (45 * _farmAcres).toStringAsFixed(1);
+    final ureaBags = ((45 * _farmAcres) / 45).ceil();
+    final dapKg = (50 * _farmAcres).toStringAsFixed(1);
+    final dapBags = ((50 * _farmAcres) / 50).ceil();
+    final mopKg = (30 * _farmAcres).toStringAsFixed(1);
+    final zincKg = (10 * _farmAcres).toStringAsFixed(1);
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Interactive Acreage Selector Card
+        Container(
+          padding: const EdgeInsets.all(14),
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFD6F0C1)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.tune_rounded, color: primaryGreen, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Select Farm Size to Calculate Dose',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Color(0xFF072A2C)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton.filled(
+                    style: IconButton.styleFrom(backgroundColor: const Color(0xFFD6F0C1)),
+                    icon: const Icon(Icons.remove, color: primaryGreen),
+                    onPressed: _farmAcres > 0.5
+                        ? () => setState(() => _farmAcres = (_farmAcres - 0.5).clamp(0.5, 50.0))
+                        : null,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF9FCF7),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFD6F0C1)),
+                    ),
+                    child: Text(
+                      '${_farmAcres.toStringAsFixed(1)} Acres',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: primaryGreen),
+                    ),
+                  ),
+                  IconButton.filled(
+                    style: IconButton.styleFrom(backgroundColor: const Color(0xFFD6F0C1)),
+                    icon: const Icon(Icons.add, color: primaryGreen),
+                    onPressed: () => setState(() => _farmAcres = (_farmAcres + 0.5).clamp(0.5, 50.0)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                children: [1.0, 2.5, 5.0, 10.0].map((acres) {
+                  final isSel = (_farmAcres - acres).abs() < 0.01;
+                  return ChoiceChip(
+                    label: Text('${acres.toStringAsFixed(acres % 1 == 0 ? 0 : 1)} Ac'),
+                    selected: isSel,
+                    selectedColor: primaryGreen,
+                    labelStyle: TextStyle(
+                      color: isSel ? Colors.white : Colors.black87,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    onSelected: (_) => setState(() => _farmAcres = acres),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+
+        // Calculated Dose Card
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -145,15 +227,18 @@ class _CropAdviceScreenState extends State<CropAdviceScreen> with SingleTickerPr
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('$crop Nutrient Calculator (Per Acre)', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              Text(
+                '$crop Total Nutrient Requirement (${_farmAcres.toStringAsFixed(1)} Acres)',
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: Color(0xFF072A2C)),
+              ),
               const SizedBox(height: 12),
-              _buildDoseRow('Urea (Nitrogen 46%)', '45 kg', 'Apply at first weeding stage'),
+              _buildDoseRow('Urea (Nitrogen 46%)', '$ureaKg kg (~$ureaBags bags)', 'Apply at first weeding stage (split into 2 equal doses)'),
               const Divider(),
-              _buildDoseRow('DAP (18:46:0)', '50 kg', 'Basal application at sowing'),
+              _buildDoseRow('DAP (18:46:0)', '$dapKg kg (~$dapBags bags)', 'Basal application at sowing depth 4-5 cm'),
               const Divider(),
-              _buildDoseRow('Muriate of Potash (MOP 60%)', '30 kg', 'Split in 2 doses at 30 & 60 DAS'),
+              _buildDoseRow('Muriate of Potash (MOP 60%)', '$mopKg kg', 'Split in 2 doses at 30 & 60 DAS for grain weight'),
               const Divider(),
-              _buildDoseRow('Zinc Sulphate (21%)', '10 kg', 'Soil application for root vigor'),
+              _buildDoseRow('Zinc Sulphate (21%)', '$zincKg kg', 'Soil application for root vigor & chlorophyll boost'),
             ],
           ),
         ),
@@ -241,7 +326,7 @@ class _CropAdviceScreenState extends State<CropAdviceScreen> with SingleTickerPr
               ],
             ),
           ),
-          Text(qty, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF044D3D))),
+          Text(qty, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Color(0xFF044D3D))),
         ],
       ),
     );
@@ -279,4 +364,3 @@ class _CropAdviceScreenState extends State<CropAdviceScreen> with SingleTickerPr
     );
   }
 }
-

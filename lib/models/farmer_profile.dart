@@ -217,5 +217,18 @@ class FarmerProfileState extends ChangeNotifier {
     if (otpDone != null) isOtpVerified = otpDone;
     notifyListeners();
   }
+
+  void resetProfile() {
+    activeAppStage = 0;
+    currentOnboardingScreen = 0;
+    fullName = '';
+    mobileNumber = '';
+    email = '';
+    photoUrl = null;
+    mpin = '';
+    farmName = '';
+    isOtpVerified = false;
+    notifyListeners();
+  }
 }
 

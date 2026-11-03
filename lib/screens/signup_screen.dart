@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/farmer_profile.dart';
 import '../services/firebase_service.dart';
@@ -134,8 +135,10 @@ class _SignupScreenState extends State<SignupScreen> {
           email: result.email,
           photo: result.photoUrl,
         );
-        // Non-blocking background sync to Firestore
-        FirebaseService.saveFarmerProfile(widget.profileState);
+        // Restore existing farmer record from Firestore in background if available
+        unawaited(FirebaseService.loadFarmerProfile(widget.profileState).then((_) {
+          FirebaseService.saveFarmerProfile(widget.profileState);
+        }));
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

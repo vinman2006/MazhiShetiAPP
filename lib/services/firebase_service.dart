@@ -184,4 +184,60 @@ class FirebaseService {
       debugPrint('[FirebaseService] Firestore save error: $e');
     }
   }
+
+  /// Load Farmer & Land profile from Cloud Firestore and populate state
+  static Future<bool> loadFarmerProfile(FarmerProfileState profile) async {
+    try {
+      if (!isInitialized) return false;
+      final user = FirebaseAuth.instance.currentUser;
+      final docId = user?.uid ?? (profile.email.isNotEmpty ? profile.email : profile.mobileNumber);
+      if (docId.isEmpty) return false;
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('farmers')
+          .doc(docId)
+          .get()
+          .timeout(const Duration(seconds: 4));
+
+      if (snapshot.exists && snapshot.data() != null) {
+        final data = snapshot.data()!;
+        profile.updateSignUpDetails(
+          name: data['fullName'] as String?,
+          mobile: data['mobileNumber'] as String?,
+          mail: data['email'] as String?,
+          fName: data['farmName'] as String?,
+          tal: data['taluka'] as String?,
+          vill: data['village'] as String?,
+          survey: data['landSurveyNo'] as String?,
+          ownership: data['landOwnershipType'] as String?,
+          pmKisan: data['isPmKisanRegistered'] as bool?,
+          pmFby: data['isPmFbyInsured'] as bool?,
+          otpDone: true,
+        );
+
+        profile.updateFarmDetail(
+          state: data['state'] as String?,
+          district: data['district'] as String?,
+          farmSize: data['farmSize'] as String?,
+        );
+
+        if (data['selectedCrops'] is List) {
+          for (final c in (data['selectedCrops'] as List)) {
+            profile.addCustomCrop(c.toString());
+          }
+        }
+
+        if (data['photoUrl'] != null && profile.photoUrl == null) {
+          profile.photoUrl = data['photoUrl'] as String;
+        }
+
+        debugPrint('[FirebaseService] Profile loaded successfully from Firestore for: $docId');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('[FirebaseService] Firestore load error: $e');
+      return false;
+    }
+  }
 }

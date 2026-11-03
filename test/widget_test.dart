@@ -6,8 +6,8 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MazhiShetiApp());
 
-    // Verify that Mazhi Sheti title/branding or onboarding loads.
-    expect(find.textContaining('Mazhi'), findsWidgets);
-    expect(find.textContaining('Language'), findsWidgets);
+    // Verify that Mazhi Sheti title and welcome screen load.
+    expect(find.textContaining('Mazhi Sheti'), findsWidgets);
+    expect(find.textContaining('Grow Better'), findsWidgets);
   });
 }
